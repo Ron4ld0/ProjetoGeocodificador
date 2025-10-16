@@ -6,9 +6,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import threading
 
-# A função de geocodificação permanece quase a mesma
 def geocode_address(address, api_key):
-    """Envia um endereço para a API do Google e retorna a latitude e longitude."""
     base_url = "https://maps.googleapis.com/maps/api/geocode/json"
     params = {
         "address": address,
@@ -35,35 +33,28 @@ class GeocoderApp:
         self.root.title("Geocodificador de Endereços")
         self.root.geometry("500x350")
 
-        # Frame principal
         self.frame = tk.Frame(root, padx=10, pady=10)
         self.frame.pack(fill="both", expand=True)
 
-        # Campo da Chave de API
         tk.Label(self.frame, text="Chave da API do Google:").grid(row=0, column=0, sticky="w", pady=2)
         self.api_key_entry = tk.Entry(self.frame, width=60)
         self.api_key_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=2)
 
-        # Seleção de Arquivo
         tk.Label(self.frame, text="Planilha de Endereços (.xlsx):").grid(row=2, column=0, sticky="w", pady=2)
         self.file_path_entry = tk.Entry(self.frame, width=50)
         self.file_path_entry.grid(row=3, column=0, sticky="ew", pady=2)
         self.browse_button = tk.Button(self.frame, text="Procurar...", command=self.browse_file)
         self.browse_button.grid(row=3, column=1, sticky="ew", padx=(5,0))
         
-        # Botão Iniciar
         self.start_button = tk.Button(self.frame, text="Iniciar Geocodificação", command=self.start_geocoding_thread, bg="green", fg="white", height=2)
         self.start_button.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(15,5))
 
-        # Barra de Progresso
         self.progress_bar = ttk.Progressbar(self.frame, orient="horizontal", length=100, mode="determinate")
         self.progress_bar.grid(row=5, column=0, columnspan=2, sticky="ew", pady=5)
 
-        # Rótulo de Status
         self.status_label = tk.Label(self.frame, text="Pronto para começar.")
         self.status_label.grid(row=6, column=0, columnspan=2, sticky="w", pady=5)
         
-        # Ajuste de colunas para expansão
         self.frame.grid_columnconfigure(0, weight=1)
 
     def browse_file(self):
@@ -80,9 +71,7 @@ class GeocoderApp:
             messagebox.showerror("Erro", "Por favor, insira a Chave da API e selecione um arquivo.")
             return
 
-        # Desativa o botão para não iniciar duas vezes
         self.start_button.config(state="disabled")
-        # Inicia o processo em uma nova thread para não travar a interface
         threading.Thread(target=self.run_geocoding, args=(api_key, input_file), daemon=True).start()
 
     def run_geocoding(self, api_key, input_file):
@@ -95,12 +84,10 @@ class GeocoderApp:
             latitudes, longitudes, status_list = [], [], []
 
             for index, row in df.iterrows():
-                # Atualiza a interface
                 self.status_label.config(text=f"Processando linha {index + 1} de {total_rows}...")
                 self.progress_bar["value"] = index + 1
-                self.root.update_idletasks() # Força a atualização da UI
+                self.root.update_idletasks()
 
-                # Colunas padrão (ajuste se necessário)
                 partes_endereco = [
                     row.get("Endereço", ""), row.get("Numero", ""), row.get("Bairro", ""),
                     row.get("Cidade", ""), row.get("UF", ""), row.get("CEP", "")
@@ -111,7 +98,7 @@ class GeocoderApp:
                     lat, lng, status = None, None, "VAZIO"
                 else:
                     lat, lng, status = geocode_address(address_completo, api_key)
-                    time.sleep(0.1) # Pequeno delay para não sobrecarregar a API
+                    time.sleep(0.1)
 
                 latitudes.append(lat)
                 longitudes.append(lng)
@@ -121,7 +108,6 @@ class GeocoderApp:
             df['Longitude'] = longitudes
             df['Status_Geocodificacao'] = status_list
 
-            # Salva o arquivo de saída
             output_filename = os.path.splitext(input_file)[0] + "_geocodificado.xlsx"
             df.to_excel(output_filename, index=False)
             
@@ -130,7 +116,6 @@ class GeocoderApp:
         except Exception as e:
             messagebox.showerror("Erro Durante o Processo", f"Ocorreu um erro: {e}")
         finally:
-            # Reativa o botão e reseta a UI
             self.start_button.config(state="normal")
             self.status_label.config(text="Processo finalizado.")
             self.progress_bar["value"] = 0
